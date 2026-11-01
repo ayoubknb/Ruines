@@ -1,0 +1,396 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Ruines</title>
+<meta name="description" content="Ruines : un jeu de plateau où chaque pièce bouge selon la couleur de sa case, et la case quittée change de couleur. À deux, contre le tavernier ou en ligne.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Pirata+One&family=IM+Fell+English:ital@0;1&family=IM+Fell+English+SC&display=swap">
+<style>body{margin:0}[hidden]{display:none!important}</style>
+<style>
+/* Layout: a candle-lit tavern table. Title carved on top, wooden plaques for mode and actions, the board is a plank with iron corner plates and painted wooden squares, then parchment notes (status, legend, rules) pinned below. Single dark look. */
+:root {
+  color-scheme: dark;
+  --table: #1f150e;
+  --plank: #5b3d25;
+  --groove: #1a110a;
+  --bone: #e3d5b8;
+  --bone-muted: #bba98a;
+  --parchment: #d6c19a;
+  --parch-ink: #2b1c11;
+  --blood: #7a2c1b;
+  --amber: #e0a24e;
+  --iron: #2c2a28;
+  --line: #4a3524;
+  --b: #4b6274;
+  --r: #8a4433;
+  --v: #5e6c45;
+  --grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.1 0 0 0 0 0.06 0 0 0 0 0.03 0 0 0 0.55 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  --stain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='s'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.035' numOctaves='3' seed='7'/%3E%3CfeColorMatrix values='0 0 0 0 0.12 0 0 0 0 0.07 0 0 0 0 0.03 0 0 0 1.1 -0.45'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23s)'/%3E%3C/svg%3E");
+  --wood: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='120'%3E%3Cfilter id='w'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.004 0.09' numOctaves='3' seed='3'/%3E%3CfeColorMatrix values='0 0 0 0 0.08 0 0 0 0 0.04 0 0 0 0 0.01 0 0 0 1.4 -0.5'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23w)'/%3E%3C/svg%3E");
+  --font-display: "Pirata One", "Old English Text MT", Georgia, serif;
+  --font-body: "IM Fell English", Georgia, "Times New Roman", serif;
+  --font-label: "IM Fell English SC", Georgia, serif;
+}
+* { box-sizing: border-box; }
+html, body { min-height: 100%; }
+body {
+  background-color: var(--table);
+  background-image:
+    radial-gradient(ellipse 90% 60% at 50% 18%, rgba(224,162,78,0.16), transparent 70%),
+    radial-gradient(ellipse 120% 90% at 50% 50%, transparent 55%, rgba(0,0,0,0.65) 100%),
+    var(--wood), var(--grain),
+    repeating-linear-gradient(0deg, transparent 0 118px, rgba(0,0,0,0.55) 118px 121px);
+  color: var(--bone);
+  font-family: var(--font-body);
+  font-size: 17px;
+  line-height: 1.45;
+}
+/* Lueur de bougie qui vacille */
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(ellipse 70% 45% at 50% 10%, rgba(255,170,80,0.10), transparent 70%);
+  animation: candle 3.2s ease-in-out infinite alternate;
+}
+@keyframes candle {
+  0% { opacity: 0.7; } 30% { opacity: 1; } 55% { opacity: 0.8; } 80% { opacity: 0.95; } 100% { opacity: 0.75; }
+}
+.wrap {
+  position: relative;
+  z-index: 1;
+  max-width: 520px;
+  margin: 0 auto;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 20px 44px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+h1 {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 3rem;
+  line-height: 1;
+  margin: 0;
+  color: #d9c7a3;
+  text-shadow: 0 2px 0 rgba(0,0,0,0.7), 0 0 18px rgba(224,162,78,0.18);
+}
+.sub { margin: 6px 0 0; color: var(--bone-muted); font-style: italic; }
+
+/* Plaques de bois */
+.modes { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.mode, button.btn {
+  font-family: var(--font-label);
+  font-size: 1rem;
+  color: var(--bone);
+  background-color: #4a3120;
+  background-image: var(--wood), var(--grain);
+  background-size: 400px 120px, 140px 140px;
+  border: 1px solid #23170e;
+  border-radius: 2px;
+  box-shadow: inset 0 1px 0 rgba(255,220,170,0.10), inset 0 -2px 0 rgba(0,0,0,0.4), 0 2px 3px rgba(0,0,0,0.5);
+  cursor: pointer;
+}
+.mode { padding: 9px 10px; }
+.mode[aria-pressed="true"] {
+  color: var(--parch-ink);
+  background-color: var(--parchment);
+  background-image: var(--stain), var(--grain);
+  background-size: 300px 300px, 140px 140px;
+  border-color: #8a7350;
+}
+button.btn { padding: 7px 12px; font-size: 0.95rem; }
+button.btn:hover, .mode:hover { border-color: var(--amber); }
+button.btn:disabled { opacity: 0.4; cursor: default; }
+button:focus-visible { outline: 2px solid var(--amber); outline-offset: 2px; }
+
+.turnbar { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+.turn { display: flex; align-items: center; gap: 10px; font-family: var(--font-label); font-size: 1.15rem; }
+.turn .dot { width: 24px; height: 24px; flex: none; position: relative; }
+.actions { display: flex; gap: 8px; }
+
+/* La planche */
+.frame {
+  position: relative;
+  padding: 16px;
+  background-color: var(--plank);
+  background-image: var(--wood), var(--stain), var(--grain);
+  background-size: 400px 120px, 300px 300px, 140px 140px;
+  box-shadow:
+    inset 0 0 22px rgba(0,0,0,0.75),
+    inset 0 0 0 1px rgba(0,0,0,0.6),
+    0 16px 34px rgba(0,0,0,0.7);
+  clip-path: polygon(0 1%, 1.4% 0, 55% 0, 57% 0.5%, 100% 0, 100% 98.6%, 98.8% 100%, 33% 100%, 31% 99.4%, 0 100%);
+}
+.iron {
+  position: absolute;
+  width: 34px;
+  height: 34px;
+  z-index: 2;
+  pointer-events: none;
+  background-color: var(--iron);
+  background-image:
+    radial-gradient(circle at 9px 9px, #6b665f 0 2.5px, #1b1a19 3.5px, transparent 4.5px),
+    radial-gradient(circle at 25px 25px, #6b665f 0 2.5px, #1b1a19 3.5px, transparent 4.5px),
+    var(--grain);
+  box-shadow: inset 0 0 0 1px rgba(0,0,0,0.6), inset 1px 1px 0 rgba(255,255,255,0.08);
+  clip-path: polygon(0 0, 100% 0, 100% 34%, 34% 34%, 34% 100%, 0 100%);
+}
+.iron.tl { top: 0; left: 0; }
+.iron.tr { top: 0; right: 0; transform: scaleX(-1); }
+.iron.bl { bottom: 0; left: 0; transform: scaleY(-1); }
+.iron.br { bottom: 0; right: 0; transform: scale(-1,-1); }
+.iron { background-image:
+    radial-gradient(circle at 6px 6px, #6b665f 0 2px, #1b1a19 3px, transparent 4px),
+    radial-gradient(circle at 26px 6px, #6b665f 0 2px, #1b1a19 3px, transparent 4px),
+    radial-gradient(circle at 6px 26px, #6b665f 0 2px, #1b1a19 3px, transparent 4px),
+    var(--grain); }
+
+.board {
+  width: 100%;
+  aspect-ratio: 1;
+  max-width: 100%;
+  padding: 4px;
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  grid-template-rows: repeat(7, 1fr);
+  gap: 4px;
+  background: var(--groove);
+  box-shadow: inset 0 0 6px rgba(0,0,0,0.9);
+  perspective: 600px;
+}
+.cell, .sw {
+  position: relative;
+  border: 0;
+  padding: 0;
+  border-radius: 0;
+  min-width: 0;
+  color: rgba(20,12,6,0.62);
+  box-shadow:
+    inset 1px 1px 0 rgba(255,225,180,0.10),
+    inset -1px -2px 0 rgba(0,0,0,0.35),
+    inset 0 0 14px rgba(20,10,4,0.55);
+}
+.cell { cursor: pointer; }
+.c0 { background-color: var(--b); }
+.c1 { background-color: var(--r); }
+.c2 { background-color: var(--v); }
+.c0, .c1, .c2 {
+  background-image:
+    radial-gradient(ellipse 40% 25% at 20% 85%, rgba(140,100,60,0.40), transparent 70%),
+    var(--wood), var(--stain), var(--grain);
+  background-size: auto, 400px 120px, 300px 300px, 140px 140px;
+}
+/* Peinture usée et entailles de couteau, différentes selon la case */
+.cell:nth-child(3n) {
+  background-image:
+    radial-gradient(ellipse 35% 22% at 80% 15%, rgba(140,100,60,0.45), transparent 70%),
+    var(--wood), var(--stain), var(--grain);
+}
+.cell:nth-child(5n+2) {
+  background-image:
+    linear-gradient(127deg, transparent 46%, rgba(15,8,3,0.65) 46.6%, rgba(255,220,170,0.10) 47.4%, transparent 48.2%),
+    var(--wood), var(--stain), var(--grain);
+}
+.cell:nth-child(7n+4) {
+  background-image:
+    linear-gradient(32deg, transparent 58%, rgba(15,8,3,0.6) 58.6%, transparent 59.8%),
+    linear-gradient(32deg, transparent 63%, rgba(15,8,3,0.5) 63.5%, transparent 64.5%),
+    var(--wood), var(--stain), var(--grain);
+}
+.glyph { filter: drop-shadow(1px 1px 0 rgba(255,225,180,0.16)); }
+.cell .glyph { position: absolute; inset: 25%; width: 50%; height: 50%; }
+.cell.last { box-shadow: inset 0 0 14px rgba(20,10,4,0.55), inset 0 0 0 2px rgba(224,162,78,0.55); }
+.cell.sel { box-shadow: inset 0 0 0 3px var(--amber), inset 0 0 16px rgba(224,162,78,0.35); }
+.cell.flip { animation: flip 0.55s ease-out; }
+@keyframes flip { from { transform: rotateY(90deg); } to { transform: rotateY(0); } }
+
+/* Pions : os et ébène, taillés au couteau */
+.piece, .dot { border-radius: 48% 52% 46% 54% / 52% 47% 53% 48%; }
+.piece {
+  position: absolute;
+  inset: 13%;
+  box-shadow:
+    2px 4px 4px rgba(0,0,0,0.6),
+    inset 0 0 0 3px rgba(0,0,0,0.12),
+    inset -3px -4px 5px rgba(0,0,0,0.35),
+    inset 2px 2px 3px rgba(255,240,220,0.12);
+}
+.cell:nth-child(3n+1) .piece { border-radius: 53% 47% 52% 48% / 46% 54% 47% 53%; transform: rotate(9deg); }
+.cell:nth-child(3n+2) .piece { border-radius: 50% 50% 45% 55% / 55% 48% 52% 45%; transform: rotate(-7deg); }
+.p0 {
+  background-color: var(--bone);
+  background-image: radial-gradient(ellipse at 70% 75%, rgba(150,120,70,0.35), transparent 55%), var(--stain), var(--grain);
+}
+.p1 {
+  background-color: #3b2617;
+  background-image: var(--wood), var(--grain);
+  background-size: 160px 60px, 140px 140px;
+}
+/* Chef : deux pions empilés */
+.stack { position: absolute; inset: 0; pointer-events: none; }
+.stack .piece.low { inset: 27% 12% 1% 12%; filter: brightness(0.7); }
+.stack .piece.high { inset: 1% 12% 27% 12%; box-shadow: 0 3px 0 rgba(15,8,3,0.65), 2px 6px 5px rgba(0,0,0,0.5), inset -3px -4px 5px rgba(0,0,0,0.35), inset 2px 2px 3px rgba(255,240,220,0.12); }
+.mark { position: absolute; pointer-events: none; }
+.target .mark {
+  inset: 39%;
+  transform: rotate(45deg);
+  background: var(--amber);
+  box-shadow: 0 0 8px rgba(224,162,78,0.55), 1px 1px 2px rgba(0,0,0,0.6);
+}
+.capture .mark { inset: 5%; border: 3px solid var(--amber); box-shadow: 0 0 8px rgba(224,162,78,0.45); }
+
+/* Parchemins */
+.parch {
+  background-color: var(--parchment);
+  background-image:
+    radial-gradient(ellipse 120% 100% at 50% 50%, transparent 60%, rgba(90,55,20,0.35) 100%),
+    var(--stain), var(--grain);
+  background-size: auto, 300px 300px, 140px 140px;
+  color: var(--parch-ink);
+  padding: 12px 14px;
+  box-shadow: 0 6px 14px rgba(0,0,0,0.5);
+  clip-path: polygon(0 4%, 3% 0, 30% 2%, 52% 0, 78% 3%, 100% 0, 99% 50%, 100% 96%, 70% 100%, 45% 97%, 20% 100%, 1% 98%, 0 60%);
+}
+.info { margin: 0; min-height: 2.9em; font-size: 1.02rem; }
+.info strong, .parch strong { color: var(--blood); font-weight: 400; font-family: var(--font-label); }
+.win { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.win p { margin: 0; font-family: var(--font-display); font-size: 1.5rem; line-height: 1.1; }
+.win .btn { color: var(--bone); }
+
+.legend { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.leg { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.sw { width: 100%; height: 38px; }
+.sw .glyph { position: absolute; left: 50%; top: 50%; width: 22px; height: 22px; transform: translate(-50%,-50%); }
+.leg b { font-family: var(--font-label); font-weight: 400; font-size: 1.05rem; }
+.leg span { font-size: 0.92rem; line-height: 1.3; }
+.cycle { margin: 10px 0 0; font-size: 0.98rem; }
+
+details.rules summary { cursor: pointer; font-family: var(--font-label); font-size: 1.15rem; }
+details.rules ul { padding-left: 1.1em; margin: 10px 0 0; display: flex; flex-direction: column; gap: 6px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .cell.flip, body::after { animation: none; }
+}
+
+/* En ligne */
+.lobby { display: flex; flex-direction: column; gap: 12px; }
+.lobby h2, .room h2 { margin: 0; font-family: var(--font-label); font-weight: 400; font-size: 1.2rem; }
+.lobby p, .room p { margin: 0; }
+.joinrow { display: flex; gap: 8px; flex-wrap: wrap; }
+.joinrow input {
+  flex: 1 1 140px;
+  min-width: 0;
+  font-family: var(--font-label);
+  font-size: 1.1rem;
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  color: var(--parch-ink);
+  background: rgba(255,245,220,0.45);
+  border: 1px solid #8a7350;
+  border-radius: 0;
+  padding: 7px 10px;
+}
+.joinrow input:focus-visible { outline: 2px solid var(--blood); outline-offset: 1px; }
+.err { color: var(--blood); }
+.room { display: flex; flex-direction: column; gap: 8px; }
+.room .code { font-family: var(--font-display); font-size: 2rem; line-height: 1; letter-spacing: 0.08em; color: var(--blood); }
+.linkrow { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.linkrow code {
+  flex: 1 1 180px;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  font-family: var(--font-body);
+  font-size: 0.92rem;
+  background: rgba(255,245,220,0.4);
+  padding: 4px 8px;
+  user-select: all;
+}
+</style>
+</head>
+<body>
+<main class="wrap">
+  <header>
+    <h1>Ruines</h1>
+    <p class="sub">Une pièce bouge selon la couleur de sa case. La case qu'elle quitte change de couleur.</p>
+  </header>
+
+  <div class="modes" role="group" aria-label="Mode de jeu">
+    <button class="mode" type="button" data-mode="duo" aria-pressed="true">À deux</button>
+    <button class="mode" type="button" data-mode="bot" aria-pressed="false">Tavernier</button>
+    <button class="mode" type="button" data-mode="online" aria-pressed="false">En ligne</button>
+  </div>
+
+  <section class="parch lobby" id="lobby" hidden>
+    <h2>Jouer en ligne</h2>
+    <p>Crée une partie et envoie le lien à ton adversaire, ou entre le code qu'il t'a donné.</p>
+    <div><button class="btn" type="button" id="create">Créer une partie</button></div>
+    <div class="joinrow">
+      <input id="codein" type="text" inputmode="text" autocomplete="off" maxlength="4" placeholder="CODE" aria-label="Code de la partie">
+      <button class="btn" type="button" id="join">Rejoindre</button>
+    </div>
+    <p class="err" id="lobbyerr"></p>
+  </section>
+
+  <section class="parch room" id="room" hidden>
+    <h2>Partie <span class="code" id="roomcode"></span></h2>
+    <div class="linkrow"><code id="roomlink"></code><button class="btn" type="button" id="copy">Copier le lien</button></div>
+    <p id="roomstate"></p>
+  </section>
+
+  <section class="turnbar" id="turnbar">
+    <div class="turn" id="turn"></div>
+    <div class="actions">
+      <button class="btn" id="undo" type="button">Annuler</button>
+      <button class="btn" id="reset" type="button">Nouvelle partie</button>
+    </div>
+  </section>
+
+  <div class="frame" id="frame">
+    <span class="iron tl"></span><span class="iron tr"></span><span class="iron bl"></span><span class="iron br"></span>
+    <div class="board" id="board" aria-label="Plateau 7 par 7"></div>
+  </div>
+
+  <div id="status"></div>
+
+  <section class="parch" aria-label="Déplacements">
+  <div class="legend">
+    <div class="leg">
+      <div class="sw c0"><svg class="glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 3v18M3 12h18"/></svg></div>
+      <b>Bleu</b><span>Ligne droite, sans sauter</span>
+    </div>
+    <div class="leg">
+      <div class="sw c1"><svg class="glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M5 5l14 14M19 5L5 19"/></svg></div>
+      <b>Rouge</b><span>Diagonale, sans sauter</span>
+    </div>
+    <div class="leg">
+      <div class="sw c2"><svg class="glyph" viewBox="0 0 24 24" fill="currentColor"><circle cx="4" cy="4" r="2.6"/><circle cx="20" cy="4" r="2.6"/><circle cx="4" cy="20" r="2.6"/><circle cx="20" cy="20" r="2.6"/></svg></div>
+      <b>Vert</b><span>Saut de 2 cases, par-dessus tout</span>
+    </div>
+  </div>
+  <p class="cycle">Case quittée : <strong>bleu → rouge → vert → bleu</strong>. La case d'arrivée ne change pas.</p>
+  </section>
+
+  <details class="rules parch">
+    <summary>Règles complètes</summary>
+    <ul>
+      <li><strong>Pièces :</strong> 7 par joueur sur la première rangée. Le Chef, c'est le pion double : deux pions empilés.</li>
+      <li><strong>Déplacement :</strong> c'est la couleur de la case de départ qui décide. Bleu et rouge glissent autant de cases que voulu tant que rien ne bloque. Vert saute exactement 2 cases dans l'une des 8 directions.</li>
+      <li><strong>Chef :</strong> mêmes règles, mais 2 cases maximum.</li>
+      <li><strong>Capture :</strong> en atterrissant sur une pièce adverse.</li>
+      <li><strong>Victoire :</strong> capturer le Chef adverse, ou amener son Chef sur la dernière rangée adverse. Un joueur qui ne peut plus bouger perd.</li>
+      <li><strong>Les pièces en os</strong> commencent. En ligne, on échange les couleurs à chaque revanche.</li>
+    </ul>
+  </details>
+</main>
+
+<script src="engine.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
